@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "author": "Anonymous maker",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-pi-pico",
+      "id": "pico",
+      "top": -41.55,
+      "left": -178.8,
+      "attrs": { "env": "micropython-20231227-v1.22.0" }
+    },
+    {
+      "type": "wokwi-max7219-matrix",
+      "id": "matrix1",
+      "top": -28.6,
+      "left": 602.96,
+      "rotate": 180,
+      "attrs": { "chain": "4" }
+    },
+    {
+      "type": "wokwi-max7219-matrix",
+      "id": "matrix2",
+      "top": -28.6,
+      "left": 286.16,
+      "rotate": 180,
+      "attrs": { "chain": "4" }
+    },
+    {
+      "type": "wokwi-max7219-matrix",
+      "id": "matrix3",
+      "top": -28.6,
+      "left": -30.64,
+      "rotate": 180,
+      "attrs": { "chain": "4" }
+    }
+  ],
+  "connections": [
+    [ "matrix3:V+.2", "matrix2:V+", "green", [ "v0" ] ],
+    [ "matrix2:GND", "matrix3:GND.2", "black", [ "h0" ] ],
+    [ "matrix2:DIN", "matrix3:DOUT", "green", [ "h0" ] ],
+    [ "matrix2:CS", "matrix3:CS.2", "green", [ "h0" ] ],
+    [ "matrix2:CLK", "matrix3:CLK.2", "green", [ "h0" ] ],
+    [ "pico:GP3", "matrix3:DIN", "green", [ "h-19.2", "v-57.6", "h134.4", "v57.6" ] ],
+    [ "matrix3:V+", "pico:VBUS", "green", [ "h-57.6", "v-57.6" ] ],
+    [ "matrix3:GND", "pico:GND.8", "black", [ "h-38.4", "v-28.8" ] ],
+    [ "pico:GP5", "matrix3:CS", "green", [ "h-28.8", "v-86.4", "h153.6", "v57.6" ] ],
+    [ "pico:GP2", "matrix3:CLK", "green", [ "h-38.4", "v-67.2", "h172.8", "v57.6" ] ],
+    [ "matrix2:CLK.2", "matrix1:CLK", "green", [ "h0" ] ],
+    [ "matrix2:CS.2", "matrix1:CS", "green", [ "h0" ] ],
+    [ "matrix2:DOUT", "matrix1:DIN", "green", [ "h0" ] ],
+    [ "matrix2:GND.2", "matrix1:GND", "black", [ "h0" ] ],
+    [ "matrix2:V+.2", "matrix1:V+", "green", [ "v0" ] ]
+  ],
+  "dependencies": {}
+}
