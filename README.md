@@ -31,3 +31,11 @@ TBD
 ### 3D Model and Print Settings
 
 TBD
+
+
+## TODO
+
+- [ ] Add wiring guide
+- [ ] Add 3D model and print settings
+- [ ] Add VS Code plugin installation guide
+- [ ] Validate animations against the movie
