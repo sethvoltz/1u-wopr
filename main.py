@@ -9,7 +9,7 @@ DELAYS = {
 }
 
 FAST_CHANCE = 0.1
-FAST_RUN_TIME = 2500
+FAST_RUN_TIME = 5000
 RELAX_RUN_TIME = 5000
 
 spi = SPI(0,sck=Pin(2),mosi=Pin(3))
