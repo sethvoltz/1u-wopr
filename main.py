@@ -5,7 +5,7 @@ import time
 
 DELAYS = {
   'slow': [500, 1000, 1500, 2000],
-  'fast': [10, 25, 50, 100]
+  'fast': [20, 50, 100, 200]
 }
 
 FAST_CHANCE = 0.05
