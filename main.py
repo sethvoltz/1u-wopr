@@ -39,12 +39,18 @@ class WOPRController:
 
   def update_display(self):
     if time.ticks_diff(time.ticks_ms(), self.display_update_time) >= 0:
+      delay = random.choice(DELAYS['fast' if self.fast else 'slow'])
+      self.display_update_time = time.ticks_add(time.ticks_ms(), delay)
+
       self.run_display()
 
-  def run_display(self):
-    delay = random.choice(DELAYS['fast' if self.fast else 'slow'])
-    self.display_update_time = time.ticks_add(time.ticks_ms(), delay)
+      # TODO: Split the display into a bunch of regions that have different shift timing and direction
+      # self.display.shift_region(8, 0, 16, 8, 1, True)
+      # self.display.shift_region(32, 0, 24, 8, -2, True)
 
+      self.display.show()
+  
+  def run_display(self):
     for y in range(8):
       for x in range(96):
         flip = random.randint(0, 1)
@@ -54,8 +60,6 @@ class WOPRController:
             self.display.pixel(x, y, 1)
           else:
             self.display.pixel(x, y, 0)
-
-    self.display.show()
 
   def run(self):
     while True:
