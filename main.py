@@ -39,6 +39,7 @@ class WOPRController:
       self.tick_section_shifter,
       self.tick_section_program_a,
       self.tick_section_a_counter,
+      self.tick_life,
       self.tick_section_program_b,
       self.tick_section_b_counter,
       self.tick_section_random,
@@ -51,6 +52,7 @@ class WOPRController:
     self.program_a_next_update = 0
     self.section_program_a_init = False
     self.a_counter_next_update = 0
+    self.life_next_update = 0
     self.program_b_next_update = 0
     self.b_counter_next_update = 0
     self.b_counter_next_reset = 0
@@ -128,6 +130,89 @@ class WOPRController:
           (counter >> (y * 4 + x)) & 1
         )
     
+    return True
+
+  def init_life_board(self):
+    w = self.SECTIONS['life']['w']
+    h = self.SECTIONS['life']['h']
+    self.life_board = [[random.randint(0, 1) for _ in range(w)] for _ in range(h)]
+    for y in range(h):
+      for x in range(w):
+        self.display.pixel(
+          self.SECTIONS['life']['x'] + x,
+          self.SECTIONS['life']['y'] + y,
+          self.life_board[y][x]
+        )
+    # Set/reset the 60-second timer for this board
+    self.life_reset_time = time.ticks_ms()
+    # Clear previous history
+    self.prev_life_board = None
+    self.prev2_life_board = None
+
+  def tick_life(self):
+    if time.ticks_diff(time.ticks_ms(), self.life_next_update) < 0:
+      return False
+
+    self.life_next_update = time.ticks_add(time.ticks_ms(), 50)
+    w = self.SECTIONS['life']['w']
+    h = self.SECTIONS['life']['h']
+
+    # Initialize the Life board if it doesn't exist
+    if not hasattr(self, 'life_board'):
+      self.init_life_board()
+      return True
+
+    new_board = [[0 for _ in range(w)] for _ in range(h)]
+    for y in range(h):
+      for x in range(w):
+        live_neighbors = 0
+        # Check neighbors
+        for dy in [-1, 0, 1]:
+          for dx in [-1, 0, 1]:
+            if dy == 0 and dx == 0:
+              continue
+            ny = y + dy
+            nx = x + dx
+            if 0 <= ny < h and 0 <= nx < w:
+              live_neighbors += self.life_board[ny][nx]
+        # Apply Conway's rules
+        if self.life_board[y][x] == 1:
+          if live_neighbors < 2 or live_neighbors > 3:
+            new_board[y][x] = 0
+          else:
+            new_board[y][x] = 1
+        else:
+          if live_neighbors == 3:
+            new_board[y][x] = 1
+          else:
+            new_board[y][x] = 0
+
+    # Detect stale board if:
+    # - new_board is the same as the most recent previous board, OR
+    # - new_board is the same as the board two cycles ago, OR
+    # - all cells are dead, OR
+    # - the board has been alive for 60 seconds.
+    if ((self.prev_life_board is not None and new_board == self.prev_life_board) or
+        (self.prev2_life_board is not None and new_board == self.prev2_life_board) or
+        not any(cell for row in new_board for cell in row) or
+        time.ticks_diff(time.ticks_ms(), self.life_reset_time) >= 60000):
+      self.init_life_board()
+      return True
+
+    # Update the display with the new board state
+    for y in range(h):
+      for x in range(w):
+        self.display.pixel(
+          self.SECTIONS['life']['x'] + x,
+          self.SECTIONS['life']['y'] + y,
+          new_board[y][x]
+        )
+
+    # Update the history: shift previous boards back by one cycle.
+    self.prev2_life_board = [row[:] for row in self.prev_life_board] if self.prev_life_board is not None else None
+    self.prev_life_board = [row[:] for row in self.life_board]
+    self.life_board = new_board
+
     return True
 
   def tick_section_program_b(self):
