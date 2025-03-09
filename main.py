@@ -130,34 +130,6 @@ class WOPRController:
     
     return True
 
-  def tick_section_random(self):
-    if time.ticks_diff(time.ticks_ms(), self.random_next_update) < 0:
-      return False
-
-    delay = random.choice(DELAYS['fast' if self.random_mode_fast else 'slow'])
-    self.random_next_update = time.ticks_add(time.ticks_ms(), delay)
-
-    for y in range(self.SECTIONS['random']['h']):
-      for x in range(self.SECTIONS['random']['w']):
-        if random.randint(0, 1) == 0:
-          self.display.pixel(
-            self.SECTIONS['random']['x'] + x,
-            self.SECTIONS['random']['y'] + y,
-            random.randint(0, 1)
-          )
-
-    return True
-
-  def update_random_mode(self):
-    if time.ticks_diff(time.ticks_ms(), controller.random_mode_next_update) >= 0:
-      if self.random_mode_fast:
-        self.random_mode_next_update = time.ticks_add(time.ticks_ms(), RELAX_RUN_TIME)
-        self.random_mode_fast = False
-      else:
-        self.random_mode_next_update = time.ticks_add(time.ticks_ms(), FAST_RUN_TIME)
-        if random.random() <= FAST_CHANCE:
-          self.random_mode_fast = True
-
   def tick_section_program_b(self):
     if time.ticks_diff(time.ticks_ms(), self.program_b_next_update) < 0:
       return False
@@ -202,6 +174,34 @@ class WOPRController:
         )
 
     return True
+
+  def tick_section_random(self):
+    if time.ticks_diff(time.ticks_ms(), self.random_next_update) < 0:
+      return False
+
+    delay = random.choice(DELAYS['fast' if self.random_mode_fast else 'slow'])
+    self.random_next_update = time.ticks_add(time.ticks_ms(), delay)
+
+    for y in range(self.SECTIONS['random']['h']):
+      for x in range(self.SECTIONS['random']['w']):
+        if random.randint(0, 1) == 0:
+          self.display.pixel(
+            self.SECTIONS['random']['x'] + x,
+            self.SECTIONS['random']['y'] + y,
+            random.randint(0, 1)
+          )
+
+    return True
+
+  def update_random_mode(self):
+    if time.ticks_diff(time.ticks_ms(), controller.random_mode_next_update) >= 0:
+      if self.random_mode_fast:
+        self.random_mode_next_update = time.ticks_add(time.ticks_ms(), RELAX_RUN_TIME)
+        self.random_mode_fast = False
+      else:
+        self.random_mode_next_update = time.ticks_add(time.ticks_ms(), FAST_RUN_TIME)
+        if random.random() <= FAST_CHANCE:
+          self.random_mode_fast = True
 
   def run(self):
     while True:
