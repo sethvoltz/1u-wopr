@@ -19,52 +19,50 @@ display.brightness(1)
 
 class WOPRController:
   def __init__(self, display):
+    self.section_ticks = [self.tick_section_random]
+
     self.display = display
     self.fast = False
     self.mode_update_time = 0
     self.display_update_time = 0
 
-  def update_mode(self):
-    if time.ticks_diff(time.ticks_ms(), controller.mode_update_time) >= 0:
-      self.run_mode()
+  # TODO: Split the display into a bunch of regions that have different shift timing and direction
+  # self.display.shift_region(8, 0, 16, 8, 1, True)
+  # self.display.shift_region(32, 0, 24, 8, -2, True)
 
-  def run_mode(self):
-    if self.fast:
-      self.mode_update_time = time.ticks_add(time.ticks_ms(), RELAX_RUN_TIME)
-      self.fast = False
-    else:
-      self.mode_update_time = time.ticks_add(time.ticks_ms(), FAST_RUN_TIME)
-      if random.random() <= FAST_CHANCE:
-        self.fast = True
+  def tick_section_random(self):
+    if time.ticks_diff(time.ticks_ms(), self.display_update_time) < 0:
+      return False
 
-  def update_display(self):
-    if time.ticks_diff(time.ticks_ms(), self.display_update_time) >= 0:
-      delay = random.choice(DELAYS['fast' if self.fast else 'slow'])
-      self.display_update_time = time.ticks_add(time.ticks_ms(), delay)
+    delay = random.choice(DELAYS['fast' if self.fast else 'slow'])
+    self.display_update_time = time.ticks_add(time.ticks_ms(), delay)
 
-      self.run_display()
-
-      # TODO: Split the display into a bunch of regions that have different shift timing and direction
-      # self.display.shift_region(8, 0, 16, 8, 1, True)
-      # self.display.shift_region(32, 0, 24, 8, -2, True)
-
-      self.display.show()
-  
-  def run_display(self):
     for y in range(8):
-      for x in range(96):
-        flip = random.randint(0, 1)
-        if flip == 0:
-          flipp = random.randint(0, 1)
-          if flipp == 0:
-            self.display.pixel(x, y, 1)
-          else:
-            self.display.pixel(x, y, 0)
+      for x in range(16):
+        if random.randint(0, 1) == 0:
+          self.display.pixel(80 + x, y, random.randint(0, 1))
+
+    return True
+
+  def update_random_mode(self):
+    if time.ticks_diff(time.ticks_ms(), controller.mode_update_time) >= 0:
+      if self.fast:
+        self.mode_update_time = time.ticks_add(time.ticks_ms(), RELAX_RUN_TIME)
+        self.fast = False
+      else:
+        self.mode_update_time = time.ticks_add(time.ticks_ms(), FAST_RUN_TIME)
+        if random.random() <= FAST_CHANCE:
+          self.fast = True
 
   def run(self):
     while True:
-      self.update_mode()
-      self.update_display()
+      should_update_display = False
+
+      for tick in self.section_ticks:
+        should_update_display |= tick()
+
+      if should_update_display:
+        self.display.show()
 
 controller = WOPRController(display)
 controller.run()
