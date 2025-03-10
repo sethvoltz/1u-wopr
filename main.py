@@ -166,15 +166,14 @@ class WOPRController:
     for y in range(h):
       for x in range(w):
         live_neighbors = 0
-        # Check neighbors
+        # Check neighbors with wrap-around
         for dy in [-1, 0, 1]:
           for dx in [-1, 0, 1]:
             if dy == 0 and dx == 0:
               continue
-            ny = y + dy
-            nx = x + dx
-            if 0 <= ny < h and 0 <= nx < w:
-              live_neighbors += self.life_board[ny][nx]
+            ny = (y + dy) % h
+            nx = (x + dx) % w
+            live_neighbors += self.life_board[ny][nx]
         # Apply Conway's rules
         if self.life_board[y][x] == 1:
           if live_neighbors < 2 or live_neighbors > 3:
