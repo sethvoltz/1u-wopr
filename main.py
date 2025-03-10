@@ -50,10 +50,13 @@ class WOPRController:
     self.shifter_next_update = 0
     self.section_shifter_init = False
     self.program_a_next_update = 0
+    self.program_a_upper_override_expiry = 0
+    self.program_a_lower_override_expiry = 0
     self.section_program_a_init = False
     self.a_counter_next_update = 0
     self.life_next_update = 0
     self.program_b_next_update = 0
+    self.program_b_override_expiry = 0
     self.b_counter_next_update = 0
     self.b_counter_next_reset = 0
     self.b_counter_value = 0
@@ -95,21 +98,66 @@ class WOPRController:
   def tick_section_program_a(self):
     if time.ticks_diff(time.ticks_ms(), self.program_a_next_update) < 0:
       return False
-    
+
     self.program_a_next_update = time.ticks_add(time.ticks_ms(), 100)
 
     if not self.section_program_a_init:
       self.init_section(self.SECTIONS['program-a'], self.SEEDS['program-a'])
       self.section_program_a_init = True
-    
-    self.display.shift_region(
-      self.SECTIONS['program-a']['x'],
-      self.SECTIONS['program-a']['y'],
-      self.SECTIONS['program-a']['w'],
-      self.SECTIONS['program-a']['h'],
-      -1,
-      True
-    )
+
+    now = time.ticks_ms()
+
+    section = self.SECTIONS['program-a']
+    x0 = section['x']
+    y0 = section['y']
+    w = section['w']
+    h = section['h']
+    half_h = h // 2
+
+    normal_shift = -1  # default shift direction and speed
+
+    # Upper half override check:
+    if time.ticks_diff(self.program_a_upper_override_expiry, now) > 0:
+      upper_shift = self.program_a_upper_override_value
+    else:
+      # Normally use normal_shift, but with a 10% chance override:
+      if random.random() < 0.1:
+        if random.random() < 0.5:
+          shift_val = 0  # pause
+        else:
+          shift_val = random.randint(1, 3)  # reverse direction with variable speed
+        upper_shift = shift_val
+
+        # Hold the override for a random duration between 300 and 1000 ms
+        override_duration = random.randint(300, 1000)
+        self.program_a_upper_override_expiry = time.ticks_add(now, override_duration)
+        self.program_a_upper_override_value = shift_val
+      else:
+        upper_shift = normal_shift
+        self.program_a_upper_override_expiry = now  # disable override
+
+    # Lower half override check:
+    if time.ticks_diff(self.program_a_lower_override_expiry, now) > 0:
+      lower_shift = self.program_a_lower_override_value
+    else:
+      # Normally use normal_shift, but with a 10% chance override:
+      if random.random() < 0.1:
+        if random.random() < 0.5:
+          shift_val = 0  # pause
+        else:
+          shift_val = random.randint(1, 3)  # reverse direction with variable speed
+        lower_shift = shift_val
+
+        # Hold the override for a random duration between 300 and 1000 ms
+        override_duration = random.randint(300, 1000)
+        self.program_a_lower_override_expiry = time.ticks_add(now, override_duration)
+        self.program_a_lower_override_value = shift_val
+      else:
+        lower_shift = normal_shift
+        self.program_a_lower_override_expiry = now  # disable override
+
+    self.display.shift_region(x0, y0, w, half_h, upper_shift, True)
+    self.display.shift_region(x0, y0 + half_h, w, h - half_h, lower_shift, True)
 
     return True
 
@@ -217,19 +265,40 @@ class WOPRController:
   def tick_section_program_b(self):
     if time.ticks_diff(time.ticks_ms(), self.program_b_next_update) < 0:
       return False
-    
+
     self.program_b_next_update = time.ticks_add(time.ticks_ms(), 150)
 
     if not self.section_program_b_init:
       self.init_section(self.SECTIONS['program-b'], self.SEEDS['program-b'])
       self.section_program_b_init = True
-    
+
+    now = time.ticks_ms()
+    normal_shift = 2
+
+    # Check for a current override: if the override expiry is still in the future,
+    # use the override value
+    if time.ticks_diff(self.program_b_override_expiry, now) > 0:
+      shift_val = self.program_b_override_value
+    else:
+      # With a 10% chance, choose an override value and hold it for a random duration
+      # before reverting to normal
+      if random.random() < 0.1:
+        # Pick a random shift from -3 to 3 (excluding 0 to avoid a pause)
+        shift_val = random.choice([-3, -2, -1, 1, 2, 3])
+        hold_duration = random.randint(1000, 3000)  # hold in ms
+        self.program_b_override_expiry = time.ticks_add(now, hold_duration)
+        self.program_b_override_value = shift_val
+      else:
+        shift_val = normal_shift
+        # Reset override expiry so future ticks can decide on a new override
+        self.program_b_override_expiry = now
+
     self.display.shift_region(
       self.SECTIONS['program-b']['x'],
       self.SECTIONS['program-b']['y'],
       self.SECTIONS['program-b']['w'],
       self.SECTIONS['program-b']['h'],
-      2,
+      shift_val,
       True
     )
 
