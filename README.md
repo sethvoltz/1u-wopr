@@ -30,12 +30,11 @@ TBD
 
 ### 3D Model and Print Settings
 
-TBD
+All models are available on [Printables](https://www.printables.com/model/1231389-1u-wopr). I recommend printing in PETG with 4 wall loops and 20% Gyroid infill.
 
 
 ## TODO
 
 - [ ] Add wiring guide
-- [ ] Add 3D model and print settings
 - [ ] Add VS Code plugin installation guide
 - [ ] Validate animations against the movie
