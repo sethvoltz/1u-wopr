@@ -18,6 +18,11 @@ In brief:
 8. Enjoy the show
 
 
+### ESPHome on an ESP32
+
+Instead of the Pico and MicroPython, the panel can run on an ESP32 with ESPHome and show up in Home Assistant. See [esphome/README.md](esphome/README.md).
+
+
 ### Installation via VS Code Plugin
 
 TBD
