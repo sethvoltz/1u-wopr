@@ -150,21 +150,21 @@ interval:
 
 sensor:
   - platform: wifi_signal
-    name: Sygnał Wi-Fi
+    name: Wi-Fi signal
     update_interval: 60s
   - platform: uptime
-    name: Czas pracy
+    name: Uptime
 
 text_sensor:
   - platform: wifi_info
     ip_address:
-      name: Adres IP
+      name: IP address
 
 button:
   - platform: restart
     name: Restart
   - platform: template
-    name: Nowa plansza Life
+    name: New Life board
     icon: mdi:dice-multiple
     on_press:
       - lambda: wopr::controller().reseed_life();
@@ -172,7 +172,7 @@ button:
 # Setting this scrolls the text once across the display (up to 8 messages queue up)
 text:
   - platform: template
-    name: Tekst
+    name: Text
     icon: mdi:format-text
     mode: text
     max_length: 255
@@ -183,7 +183,7 @@ text:
 switch:
   - platform: template
     id: wopr_fast_bursts
-    name: Szybkie serie
+    name: Fast bursts
     icon: mdi:flash
     entity_category: config
     optimistic: true
@@ -192,7 +192,7 @@ switch:
 number:
   - platform: template
     id: wopr_life_interval
-    name: Tempo Life
+    name: Life interval
     icon: mdi:timer-outline
     entity_category: config
     mode: slider
@@ -237,7 +237,7 @@ light:
       brightness: 10%
   # Bright white on-board flash LED. Always off after boot.
   - platform: monochromatic
-    name: Lampa
+    name: Flash LED
     icon: mdi:led-on
     output: flash_led
     restore_mode: ALWAYS_OFF
