@@ -8,6 +8,11 @@
 #   MAX7219 GND -> GND (common with the ESP32-CAM)
 #
 # Keep wopr.h next to this file.
+#
+# Put a secrets.yaml next to it as well:
+#   wifi_ssid / wifi_password, wifi2_ssid / wifi2_password
+#   api_key: base64 of 32 random bytes (`openssl rand -base64 32`); Home Assistant
+#            asks for it when the device is added
 
 substitutions:
   name: wopr
@@ -32,6 +37,8 @@ esp32:
 logger:
 
 api:
+  encryption:
+    key: !secret api_key
 
 ota:
   - platform: esphome

@@ -35,23 +35,10 @@ struct Section {
   int x, y, w, h;
 };
 
-// TEMPORARY: the 2nd module from the left (x 8..15) has a faulty MAX7219 and
-// its LED matrix is pulled out. With this set, program A and its counter move
-// one module to the right and Life shrinks from 32 to 24 columns so nothing is
-// drawn on the dead module. Set to false once the module is repaired to get
-// the original layout back.
-#define WOPR_SKIP_SECOND_MODULE true
-
 static const Section SHIFTER = {0, 0, 8, 8};
-#if WOPR_SKIP_SECOND_MODULE
-static const Section PROGRAM_A = {18, 0, 16, 4};
-static const Section A_COUNTER = {18, 6, 16, 2};
-static const Section LIFE = {36, 0, 24, 8};
-#else
 static const Section PROGRAM_A = {10, 0, 16, 4};
 static const Section A_COUNTER = {10, 6, 16, 2};
 static const Section LIFE = {28, 0, 32, 8};
-#endif
 static const Section PROGRAM_B = {62, 0, 16, 4};
 static const Section B_COUNTER = {62, 6, 16, 2};
 static const Section RANDOM = {80, 0, 16, 8};
@@ -60,7 +47,7 @@ static const uint16_t SEED_SHIFTER[8] = {0xEC, 0x62, 0x38, 0x51, 0x36, 0x66, 0x5
 static const uint16_t SEED_PROGRAM_A[4] = {0x7018, 0x1C61, 0x0C0C, 0x3039};
 static const uint16_t SEED_PROGRAM_B[4] = {0x42AB, 0x0070, 0x06E2, 0x6064};
 
-static const int LIFE_W = WOPR_SKIP_SECOND_MODULE ? 24 : 32;
+static const int LIFE_W = 32;
 static const int LIFE_H = 8;
 
 class Controller {
