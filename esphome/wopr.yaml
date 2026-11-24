@@ -1,0 +1,236 @@
+# 1U WOPR on ESPHome (AI-Thinker ESP32-CAM, camera unused).
+#
+# Wiring (first matrix of the chain, the one the Pico was connected to):
+#   MAX7219 CLK -> GPIO14
+#   MAX7219 DIN -> GPIO13
+#   MAX7219 CS  -> GPIO15
+#   MAX7219 VCC -> 5V  (straight from the power supply, not through the ESP32-CAM)
+#   MAX7219 GND -> GND (common with the ESP32-CAM)
+#
+# Keep wopr.h next to this file.
+
+substitutions:
+  name: wopr
+  friendly_name: WOPR
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  includes:
+    - wopr.h
+  on_boot:
+    then:
+      - lambda: |-
+          wopr::scroller().show("W.O.P.R");
+          wopr::scroller().show("DEFCON 5");
+
+esp32:
+  board: esp32cam
+  framework:
+    type: esp-idf
+
+logger:
+
+api:
+
+ota:
+  - platform: esphome
+
+wifi:
+  networks:
+    - ssid: !secret wifi_ssid
+      password: !secret wifi_password
+    - ssid: !secret wifi2_ssid
+      password: !secret wifi2_password
+  ap:
+
+captive_portal:
+
+globals:
+  # MAX7219 intensity requested by the light entity: 0-15, or -1 for off
+  - id: wopr_level
+    type: int
+    restore_value: false
+    initial_value: "1"
+
+spi:
+  clk_pin: GPIO14
+  mosi_pin: GPIO13
+
+display:
+  - platform: max7219digit
+    id: wopr_display
+    cs_pin:
+      number: GPIO15
+      ignore_strapping_warning: true
+    num_chips: 12
+    intensity: 1
+    scroll_enable: false
+    # If the picture comes out mirrored / upside down / with scrambled modules,
+    # adjust these instead of rewiring:
+    # rotate_chip: 180
+    # reverse_enable: true
+    # flip_x: true
+    update_interval: 20ms
+    lambda: |-
+      auto &controller = wopr::controller();
+      static int applied_level = -2;
+
+      // Animation settings come straight from the HA entities
+      controller.set_fast_bursts(id(wopr_fast_bursts).state);
+      float life_ms = id(wopr_life_interval).state;
+      if (!std::isnan(life_ms))
+        controller.set_life_interval((uint32_t) life_ms);
+      static uint32_t last_refresh = 0;
+
+      // The component sends brightness to the chips only when it changes.
+      // Re-send it (and the on/off state) every few seconds so a chip that
+      // missed or mangled the command recovers on its own.
+      uint32_t now = millis();
+      if (now - last_refresh >= 3000) {
+        last_refresh = now;
+        applied_level = -2;
+      }
+
+      int level = id(wopr_level);
+      if (level != applied_level) {
+        if (level < 0) {
+          it.turn_on_off(false);
+        } else {
+          it.intensity(level);
+          it.turn_on_off(true);
+        }
+        applied_level = level;
+      }
+      auto &scroller = wopr::scroller();
+      if (level < 0) {
+        scroller.clear();
+        return;
+      }
+
+      // The animation keeps running underneath; queued text replaces it on screen
+      controller.tick(now);
+      scroller.tick(now);
+      if (scroller.active()) {
+        scroller.draw(it);
+      } else {
+        controller.draw(it);
+      }
+
+# Status on the small red on-board LED (GPIO33, active low):
+#   solid    = no Wi-Fi
+#   blinking = Wi-Fi up, Home Assistant not connected
+#   off      = all good
+interval:
+  - interval: 500ms
+    then:
+      - lambda: |-
+          static bool phase = false;
+          phase = !phase;
+          bool lit;
+          if (!wifi::global_wifi_component->is_connected()) {
+            lit = true;
+          } else if (!api::global_api_server->is_connected_with_state_subscription()) {
+            lit = phase;
+          } else {
+            lit = false;
+          }
+          if (lit) {
+            id(status_led).turn_on();
+          } else {
+            id(status_led).turn_off();
+          }
+
+sensor:
+  - platform: wifi_signal
+    name: Sygnał Wi-Fi
+    update_interval: 60s
+  - platform: uptime
+    name: Czas pracy
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: Adres IP
+
+button:
+  - platform: restart
+    name: Restart
+  - platform: template
+    name: Nowa plansza Life
+    icon: mdi:dice-multiple
+    on_press:
+      - lambda: wopr::controller().reseed_life();
+
+# Setting this scrolls the text once across the display (up to 8 messages queue up)
+text:
+  - platform: template
+    name: Tekst
+    icon: mdi:format-text
+    mode: text
+    max_length: 255
+    optimistic: true
+    set_action:
+      - lambda: wopr::scroller().show(x);
+
+switch:
+  - platform: template
+    id: wopr_fast_bursts
+    name: Szybkie serie
+    icon: mdi:flash
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+number:
+  - platform: template
+    id: wopr_life_interval
+    name: Tempo Life
+    icon: mdi:timer-outline
+    entity_category: config
+    mode: slider
+    unit_of_measurement: ms
+    min_value: 20
+    max_value: 500
+    step: 10
+    initial_value: 50
+    optimistic: true
+    restore_value: true
+
+output:
+  - platform: ledc
+    id: flash_led
+    pin: GPIO4
+  - platform: gpio
+    id: status_led
+    pin:
+      number: GPIO33
+      inverted: true
+  - platform: template
+    id: wopr_brightness
+    type: float
+    write_action:
+      - lambda: |-
+          // 0 -> off, (0..1] -> MAX7219 intensity 0..12
+          // (capped below the chip's max of 15 to stay within a 2.4 A supply)
+          id(wopr_level) = state <= 0.0f ? -1 : (int) ceilf(state * 13.0f) - 1;
+
+light:
+  - platform: monochromatic
+    id: wopr_light
+    name: None
+    icon: mdi:dots-grid
+    output: wopr_brightness
+    gamma_correct: 1.0
+    default_transition_length: 0s
+    restore_mode: RESTORE_DEFAULT_ON
+    # First boot only; matches brightness(1) from main.py
+    initial_state:
+      state: true
+      brightness: 10%
+  # Bright white on-board flash LED. Always off after boot.
+  - platform: monochromatic
+    name: Lampa
+    icon: mdi:led-on
+    output: flash_led
+    restore_mode: ALWAYS_OFF
